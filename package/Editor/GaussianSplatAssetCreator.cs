@@ -269,6 +269,9 @@ namespace GaussianSplatting.Editor
                 return;
             }
 
+            float sortFreeBackgroundWeight = inputSplats[0].info;
+            float sortFreeSigma = inputSplats.Length > 1 ? inputSplats[1].info : 1.0f;
+
             float3 boundsMin, boundsMax;
             var boundsJob = new CalcBoundsJob
             {
@@ -303,15 +306,31 @@ namespace GaussianSplatting.Editor
             string pathOther = $"{m_OutputFolder}/{baseName}_oth.bytes";
             string pathCol = $"{m_OutputFolder}/{baseName}_col.bytes";
             string pathSh = $"{m_OutputFolder}/{baseName}_shs.bytes";
+            string pathOpacitySH = $"{m_OutputFolder}/{baseName}_osh.bytes"; // sortfreeGS
+            bool useChunks = isUsingChunks;
 
             // if we are using full lossless (FP32) data, then do not use any chunking, and keep data as-is
-            bool useChunks = isUsingChunks;
+            
+            // sortfreeGS modification
+            bool isSortFree =
+                inputSplats[0].info != 0.0f ||
+                inputSplats[0].opacitySH0 != 0.0f ||
+                inputSplats[0].opacitySH1 != Vector4.zero ||
+                inputSplats[0].opacitySH2 != Vector4.zero ||
+                inputSplats[0].opacitySH3 != Vector4.zero ||
+                inputSplats[0].opacitySH4 != Vector3.zero;
+
             if (useChunks)
                 CreateChunkData(inputSplats, pathChunk, ref dataHash);
+
             CreatePositionsData(inputSplats, pathPos, ref dataHash);
             CreateOtherData(inputSplats, pathOther, ref dataHash, splatSHIndices);
             CreateColorData(inputSplats, pathCol, ref dataHash);
             CreateSHData(inputSplats, pathSh, ref dataHash, clusteredSHs);
+
+            if (isSortFree)
+                CreateOpacitySHData(inputSplats, pathOpacitySH, ref dataHash);
+
             asset.SetDataHash(dataHash);
 
             splatSHIndices.Dispose();
@@ -328,6 +347,11 @@ namespace GaussianSplatting.Editor
                 AssetDatabase.LoadAssetAtPath<TextAsset>(pathOther),
                 AssetDatabase.LoadAssetAtPath<TextAsset>(pathCol),
                 AssetDatabase.LoadAssetAtPath<TextAsset>(pathSh));
+            if (isSortFree)
+            {
+                TextAsset opacitySHAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(pathOpacitySH);
+                asset.SetSortFreeData(opacitySHAsset, sortFreeSigma, sortFreeBackgroundWeight);
+            }
 
             var assetPath = $"{m_OutputFolder}/{baseName}.asset";
             var savedAsset = CreateOrReplaceAsset(asset, assetPath);
@@ -357,6 +381,8 @@ namespace GaussianSplatting.Editor
             }
             return data;
         }
+        
+
 
         [BurstCompile]
         struct CalcBoundsJob : IJob
@@ -1064,6 +1090,46 @@ namespace GaussianSplatting.Editor
                 data.Dispose();
             }
         }
+
+        // sortfreeGS modification
+        struct OpacitySHData
+        {
+            public Vector4 sh0; // x = f_do_0
+            public Vector4 sh1; // f_ro_0 ~ 3
+            public Vector4 sh2; // f_ro_4 ~ 7
+            public Vector4 sh3; // f_ro_8 ~ 11
+            public Vector4 sh4; // f_ro_12 ~ 14, pad
+        }
+
+        void CreateOpacitySHData(
+            NativeArray<InputSplatData> inputSplats,
+            string filePath,
+            ref Hash128 dataHash)
+        {
+            NativeArray<OpacitySHData> data =
+                new NativeArray<OpacitySHData>(inputSplats.Length, Allocator.TempJob);
+
+            for (int i = 0; i < inputSplats.Length; i++)
+            {
+                var s = inputSplats[i];
+                data[i] = new OpacitySHData
+                {
+                    sh0 = new Vector4(s.opacitySH0, 0, 0, 0),
+                    sh1 = s.opacitySH1,
+                    sh2 = s.opacitySH2,
+                    sh3 = s.opacitySH3,
+                    sh4 = new Vector4(s.opacitySH4.x, s.opacitySH4.y, s.opacitySH4.z, 0)
+                };
+            }
+
+            dataHash.Append(data);
+
+            using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            fs.Write(data.Reinterpret<byte>(UnsafeUtility.SizeOf<OpacitySHData>()));
+
+            data.Dispose();
+        }
+        // modification end
 
         static GaussianSplatAsset.CameraInfo[] LoadJsonCamerasFile(string curPath, bool doImport)
         {

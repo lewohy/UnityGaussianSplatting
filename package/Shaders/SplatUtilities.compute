@@ -48,6 +48,11 @@ RWStructuredBuffer<uint> _SplatSortDistances;
 RWStructuredBuffer<uint> _SplatSortKeys;
 uint _SplatCount;
 
+// sortFreeGS
+uint _UseSortFree;
+float _SortFreeSigma;
+float _SortFreeBackgroundWeight;
+
 // radix sort etc. friendly, see http://stereopsis.com/radix.html
 uint FloatToSortableUint(float f)
 {
@@ -244,6 +249,20 @@ void CSCalcViewData (uint3 id : SV_DispatchThreadID)
         half4 col;
         col.rgb = ShadeSH(splat.sh, objViewDir, _SHOrder, _SHOnly != 0);
         col.a = min(splat.opacity * opacityScale, 65000);
+        // sortfreeGS
+        float vi = 1.0;
+        float depthWeight = 1.0;
+
+        if (_UseSortFree != 0)
+        {
+            vi = EvalOpacitySH(idx, objViewDir);
+
+            float viewDepth = mul(_MatrixMV, float4(splat.pos, 1)).z;
+            depthWeight = max(0.0, 1.0 - abs(viewDepth) / max(_SortFreeSigma, 1e-6));
+        }
+
+        view.sortFreeData = (f32tof16(vi) << 16) | f32tof16(depthWeight);
+        // sortfreeGS end
         view.color.x = (f32tof16(col.r) << 16) | f32tof16(col.g);
         view.color.y = (f32tof16(col.b) << 16) | f32tof16(col.a);
     }

@@ -117,8 +117,12 @@ namespace GaussianSplatting.Runtime
 
                 // sort
                 var matrix = gs.transform.localToWorldMatrix;
+                // sortfreeGS modification: bypass sorting when sortfreeGS
+                if (!gs.assset.isSortFree)
+                {
                 if (gs.m_FrameCounter % gs.m_SortNthFrame == 0)
                     gs.SortPoints(cmb, cam, matrix);
+                }
                 ++gs.m_FrameCounter;
 
                 // cache view
@@ -129,7 +133,7 @@ namespace GaussianSplatting.Runtime
                     GaussianSplatRenderer.RenderMode.DebugPointIndices => gs.m_MatDebugPoints,
                     GaussianSplatRenderer.RenderMode.DebugBoxes => gs.m_MatDebugBoxes,
                     GaussianSplatRenderer.RenderMode.DebugChunkBounds => gs.m_MatDebugBoxes,
-                    _ => gs.m_MatSplats
+                    _ => gs.asset.isSortFree ? gs.m_MatSplatsSortFree : gs.m_MatSplats
                 };
                 if (displayMat == null)
                     continue;
@@ -244,6 +248,7 @@ namespace GaussianSplatting.Runtime
         public GaussianCutout[] m_Cutouts;
 
         public Shader m_ShaderSplats;
+        public Shader m_ShaderSplatsSortFree;
         public Shader m_ShaderComposite;
         public Shader m_ShaderDebugPoints;
         public Shader m_ShaderDebugBoxes;
@@ -270,11 +275,13 @@ namespace GaussianSplatting.Runtime
         GraphicsBuffer m_GpuEditSelectedMouseDown; // selection state at start of operation
         GraphicsBuffer m_GpuEditPosMouseDown; // position state at start of operation
         GraphicsBuffer m_GpuEditOtherMouseDown; // rotation/scale state at start of operation
+        GraphicsBuffer m_GpuOpacitySHData; // sortfreeGS modification
 
         GpuSorting m_Sorter;
         GpuSorting.Args m_SorterArgs;
 
         internal Material m_MatSplats;
+        internal Material m_MatSplatsSortFree;
         internal Material m_MatComposite;
         internal Material m_MatDebugPoints;
         internal Material m_MatDebugBoxes;
@@ -328,6 +335,13 @@ namespace GaussianSplatting.Runtime
             public static readonly int SelectionMode = Shader.PropertyToID("_SelectionMode");
             public static readonly int SplatPosMouseDown = Shader.PropertyToID("_SplatPosMouseDown");
             public static readonly int SplatOtherMouseDown = Shader.PropertyToID("_SplatOtherMouseDown");
+
+            // sortfreeGS modification
+            public static readonly int SplatOpacitySH = Shader.PropertyToID("_SplatOpacitySH");
+            public static readonly int SortFreeSigma = Shader.PropertyToID("_SortFreeSigma");
+            public static readonly int SortFreeBackgroundWeight = Shader.PropertyToID("_SortFreeBackgroundWeight");
+            public static readonly int UseSortFree = Shader.PropertyToID("_UseSortFree");
+            // modification end
         }
 
         [field: NonSerialized] public bool editModified { get; private set; }
@@ -417,6 +431,21 @@ namespace GaussianSplatting.Runtime
                 2, 3, 6, 3, 7, 6
             });
 
+            // sortfreeGS data modification
+            if (asset.isSortFree && asset.opacitySHData != null)
+            {
+                m_GpuOpacitySHData = new GraphicsBuffer(
+                    GraphicsBuffer.Target.Raw,
+                    asset.opacitySHData.dataSize / 4,
+                    4)
+                {
+                    name = "GaussianOpacitySHData"
+                };
+
+                m_GpuOpacitySHData.SetData(asset.opacitySHData.GetData<uint>());
+            }
+            // modification end
+
             InitSortBuffers(splatCount);
         }
 
@@ -444,7 +473,8 @@ namespace GaussianSplatting.Runtime
                 m_SorterArgs.resources = GpuSorting.SupportResources.Load((uint)count);
         }
 
-        bool resourcesAreSetUp => m_ShaderSplats != null && m_ShaderComposite != null && m_ShaderDebugPoints != null &&
+        bool resourcesAreSetUp => m_ShaderSplats != null && m_ShaderSplatsSortFree != null &&
+                                  m_ShaderComposite != null && m_ShaderDebugPoints != null &&
                                   m_ShaderDebugBoxes != null && m_CSSplatUtilities != null && SystemInfo.supportsComputeShaders;
 
         public void EnsureMaterials()
@@ -452,6 +482,7 @@ namespace GaussianSplatting.Runtime
             if (m_MatSplats == null && resourcesAreSetUp)
             {
                 m_MatSplats = new Material(m_ShaderSplats) {name = "GaussianSplats"};
+                m_MatSplatsSortFree = new Material(m_ShaderSplatsSortFree) {name = "GaussianSplatsSortFree"};
                 m_MatComposite = new Material(m_ShaderComposite) {name = "GaussianClearDstAlpha"};
                 m_MatDebugPoints = new Material(m_ShaderDebugPoints) {name = "GaussianDebugPoints"};
                 m_MatDebugBoxes = new Material(m_ShaderDebugBoxes) {name = "GaussianDebugBoxes"};
@@ -504,6 +535,12 @@ namespace GaussianSplatting.Runtime
             cmb.SetComputeIntParam(cs, Props.SplatCount, m_SplatCount);
             cmb.SetComputeIntParam(cs, Props.SplatChunkCount, m_GpuChunksValid ? m_GpuChunks.count : 0);
 
+            // sortfreeGS: bind these for every kernel so platforms do not complain about unset buffers.
+            cmb.SetComputeIntParam(cs, Props.UseSortFree, m_Asset.isSortFree ? 1 : 0);
+            cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatOpacitySH, m_GpuOpacitySHData ?? m_GpuPosData);
+            cmb.SetComputeFloatParam(cs, Props.SortFreeSigma, m_Asset.sortFreeSigma);
+            cmb.SetComputeFloatParam(cs, Props.SortFreeBackgroundWeight, m_Asset.sortFreeBackgroundWeight);
+
             UpdateCutoutsBuffer();
             cmb.SetComputeIntParam(cs, Props.SplatCutoutsCount, m_Cutouts?.Length ?? 0);
             cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatCutouts, m_GpuEditCutouts);
@@ -522,6 +559,12 @@ namespace GaussianSplatting.Runtime
             mat.SetInteger(Props.SplatFormat, (int)format);
             mat.SetInteger(Props.SplatCount, m_SplatCount);
             mat.SetInteger(Props.SplatChunkCount, m_GpuChunksValid ? m_GpuChunks.count : 0);
+
+            // sortfreeGS modification
+            mat.SetInteger(Props.UseSortFree, m_Asset.isSortFree ? 1 : 0);
+            mat.SetBuffer(Props.SplatOpacitySH, m_GpuOpacitySHData ?? m_GpuPosData);
+            mat.SetFloat(Props.SortFreeSigma, m_Asset.sortFreeSigma);
+            mat.SetFloat(Props.SortFreeBackgroundWeight, m_Asset.sortFreeBackgroundWeight);
         }
 
         static void DisposeBuffer(ref GraphicsBuffer buf)
@@ -571,6 +614,7 @@ namespace GaussianSplatting.Runtime
             m_Registered = false;
 
             DestroyImmediate(m_MatSplats);
+            DestroyImmediate(m_MatSplatsSortFree);
             DestroyImmediate(m_MatComposite);
             DestroyImmediate(m_MatDebugPoints);
             DestroyImmediate(m_MatDebugBoxes);

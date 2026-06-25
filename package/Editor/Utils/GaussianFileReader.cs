@@ -21,6 +21,16 @@ namespace GaussianSplatting.Editor.Utils
         public Vector3 dc0;
         public Vector3 sh1, sh2, sh3, sh4, sh5, sh6, sh7, sh8, sh9, shA, shB, shC, shD, shE, shF;
         public float opacity;
+
+        // Sort-free GS .ply informations
+        public float opacitySH0;       // f_do_0
+        public Vector4 opacitySH1;     // f_ro_0 ~ f_ro_3
+        public Vector4 opacitySH2;     // f_ro_4 ~ f_ro_7
+        public Vector4 opacitySH3;     // f_ro_8 ~ f_ro_11
+        public Vector3 opacitySH4;     // f_ro_12 ~ f_ro_14
+        public float info;
+        // modification end
+        
         public Vector3 scale;
         public Quaternion rot;
     }
@@ -145,13 +155,34 @@ namespace GaussianSplatting.Editor.Utils
                 "f_rest_43",
                 "f_rest_44",
                 "opacity",
+
+                // reader field increasement
+                "f_do_0",
+                "f_ro_0",
+                "f_ro_1",
+                "f_ro_2",
+                "f_ro_3",
+                "f_ro_4",
+                "f_ro_5",
+                "f_ro_6",
+                "f_ro_7",
+                "f_ro_8",
+                "f_ro_9",
+                "f_ro_10",
+                "f_ro_11",
+                "f_ro_12",
+                "f_ro_13",
+                "f_ro_14",
+                "info",
+                // modification end
+
                 "scale_0",
                 "scale_1",
                 "scale_2",
                 "rot_0",
                 "rot_1",
                 "rot_2",
-                "rot_3",                
+                "rot_3",
             };
             Assert.AreEqual(UnsafeUtility.SizeOf<InputSplatData>() / 4, splatAttributes.Length);
             NativeArray<int> srcOffsets = new NativeArray<int>(splatAttributes.Length, Allocator.Temp);
