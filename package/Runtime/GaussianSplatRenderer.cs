@@ -118,7 +118,7 @@ namespace GaussianSplatting.Runtime
                 // sort
                 var matrix = gs.transform.localToWorldMatrix;
                 // sortfreeGS modification: bypass sorting when sortfreeGS
-                if (!gs.assset.isSortFree)
+                if (!gs.m_Asset.isSortFree)
                 {
                 if (gs.m_FrameCounter % gs.m_SortNthFrame == 0)
                     gs.SortPoints(cmb, cam, matrix);
@@ -436,7 +436,7 @@ namespace GaussianSplatting.Runtime
             {
                 m_GpuOpacitySHData = new GraphicsBuffer(
                     GraphicsBuffer.Target.Raw,
-                    asset.opacitySHData.dataSize / 4,
+                    (int)asset.opacitySHData.dataSize / 4,
                     4)
                 {
                     name = "GaussianOpacitySHData"
