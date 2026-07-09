@@ -31,6 +31,7 @@ namespace GaussianSplatting.Editor
         SerializedProperty m_PropPointDisplaySize;
         SerializedProperty m_PropCutouts;
         SerializedProperty m_PropShaderSplats;
+        SerializedProperty m_PropShaderSplatsSortFree;
         SerializedProperty m_PropShaderComposite;
         SerializedProperty m_PropShaderDebugPoints;
         SerializedProperty m_PropShaderDebugBoxes;
@@ -71,6 +72,7 @@ namespace GaussianSplatting.Editor
             m_PropPointDisplaySize = serializedObject.FindProperty("m_PointDisplaySize");
             m_PropCutouts = serializedObject.FindProperty("m_Cutouts");
             m_PropShaderSplats = serializedObject.FindProperty("m_ShaderSplats");
+            m_PropShaderSplatsSortFree = serializedObject.FindProperty("m_ShaderSplatsSortFree");
             m_PropShaderComposite = serializedObject.FindProperty("m_ShaderComposite");
             m_PropShaderDebugPoints = serializedObject.FindProperty("m_ShaderDebugPoints");
             m_PropShaderDebugBoxes = serializedObject.FindProperty("m_ShaderDebugBoxes");
@@ -123,6 +125,7 @@ namespace GaussianSplatting.Editor
             if (m_ResourcesExpanded)
             {
                 EditorGUILayout.PropertyField(m_PropShaderSplats);
+                EditorGUILayout.PropertyField(m_PropShaderSplatsSortFree);
                 EditorGUILayout.PropertyField(m_PropShaderComposite);
                 EditorGUILayout.PropertyField(m_PropShaderDebugPoints);
                 EditorGUILayout.PropertyField(m_PropShaderDebugBoxes);

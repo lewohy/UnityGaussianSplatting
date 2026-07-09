@@ -314,6 +314,7 @@ SplatBufferDataType _SplatPos;
 SplatBufferDataType _SplatOther;
 SplatBufferDataType _SplatSH;
 Texture2D _SplatColor;
+ByteAddressBuffer _SplatOpacitySH;
 uint _SplatFormat;
 
 // Match GaussianSplatAsset.VectorFormat
@@ -612,6 +613,7 @@ struct SplatViewData
     float4 pos;
     float2 axis1, axis2;
     uint2 color; // 4xFP16
+    uint sortFreeData; // x: vi FP16, y: depthWeight FP16
 };
 
 // If we are rendering into backbuffer directly (e.g. HDR off, no postprocessing),
@@ -630,6 +632,67 @@ void FlipProjectionIfBackbuffer(inout float4 vpos)
 {
     if (_CameraTargetTexture_TexelSize.z == 1.0)
         vpos.y = -vpos.y;
+}
+
+// sortfreeGS
+float LoadOpacitySHCoeff(uint splatIdx, uint coeffIdx)
+{
+    uint baseAddr = splatIdx * 80;
+    return asfloat(_SplatOpacitySH.Load(baseAddr + coeffIdx * 4));
+}
+
+float EvalOpacitySH(uint splatIdx, float3 dir)
+{
+    dir *= -1;
+
+    float x = dir.x;
+    float y = dir.y;
+    float z = dir.z;
+
+    float c0  = LoadOpacitySHCoeff(splatIdx, 0);
+    float r0  = LoadOpacitySHCoeff(splatIdx, 4);
+    float r1  = LoadOpacitySHCoeff(splatIdx, 5);
+    float r2  = LoadOpacitySHCoeff(splatIdx, 6);
+    float r3  = LoadOpacitySHCoeff(splatIdx, 7);
+    float r4  = LoadOpacitySHCoeff(splatIdx, 8);
+    float r5  = LoadOpacitySHCoeff(splatIdx, 9);
+    float r6  = LoadOpacitySHCoeff(splatIdx, 10);
+    float r7  = LoadOpacitySHCoeff(splatIdx, 11);
+    float r8  = LoadOpacitySHCoeff(splatIdx, 12);
+    float r9  = LoadOpacitySHCoeff(splatIdx, 13);
+    float r10 = LoadOpacitySHCoeff(splatIdx, 14);
+    float r11 = LoadOpacitySHCoeff(splatIdx, 15);
+    float r12 = LoadOpacitySHCoeff(splatIdx, 16);
+    float r13 = LoadOpacitySHCoeff(splatIdx, 17);
+    float r14 = LoadOpacitySHCoeff(splatIdx, 18);
+
+    float res = c0;
+
+    res += SH_C1 * (-r0 * y + r1 * z - r2 * x);
+
+    float xx = x * x, yy = y * y, zz = z * z;
+    float xy = x * y, yz = y * z, xz = x * z;
+
+    res +=
+        (SH_C2[0] * xy) * r3 +
+        (SH_C2[1] * yz) * r4 +
+        (SH_C2[2] * (2 * zz - xx - yy)) * r5 +
+        (SH_C2[3] * xz) * r6 +
+        (SH_C2[4] * (xx - yy)) * r7;
+
+    res +=
+        (SH_C3[0] * y * (3 * xx - yy)) * r8 +
+        (SH_C3[1] * xy * z) * r9 +
+        (SH_C3[2] * y * (4 * zz - xx - yy)) * r10 +
+        (SH_C3[3] * z * (2 * zz - 3 * xx - 3 * yy)) * r11 +
+        (SH_C3[4] * x * (4 * zz - xx - yy)) * r12 +
+        (SH_C3[5] * z * (xx - yy)) * r13 +
+        (SH_C3[6] * x * (xx - 3 * yy)) * r14;
+
+    float sigmoidRes = 1.0 / (1.0 + exp(-res));
+    return sigmoidRes;
+    
+    // return max(res, 0.0);
 }
 
 #endif // GAUSSIAN_SPLATTING_HLSL

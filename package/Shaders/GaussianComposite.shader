@@ -31,11 +31,29 @@ v2f vert (uint vtxID : SV_VertexID)
 }
 
 Texture2D _GaussianSplatRT;
+int _UseSortFree;
+float _SortFreeBackgroundWeight;
+float _SortFreeExposure;
+
 
 half4 frag (v2f i) : SV_Target
 {
-    half4 col = _GaussianSplatRT.Load(int3(i.vertex.xy, 0));
-    return float4(GammaToLinearSpace(col.rgb/col.a),col.a);
+    float4 col = _GaussianSplatRT.Load(int3(i.vertex.xy, 0));
+    
+    if (_UseSortFree != 0)
+    {
+        // float count = max(col.a, 1.0);
+        // float accumWeight = max(col.a, 1e-6);
+        // float3 avgColor = col.rgb / count;
+        // return float4(saturate(avgColor), 1.0);
+        float w = max(col.a + _SortFreeBackgroundWeight, 1e-6);
+        float3 avgColor = col.rgb / w;
+        float outAlpha = saturate(col.a / w);
+        return float4(saturate(avgColor), outAlpha);
+    }
+
+    float alpha = max(col.a, 1e-6);
+    return float4(GammaToLinearSpace(col.rgb / alpha), col.a);
 }
 ENDCG
         }

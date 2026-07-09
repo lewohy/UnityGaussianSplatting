@@ -21,6 +21,18 @@ namespace GaussianSplatting.Runtime
         [SerializeField] Vector3 m_BoundsMax;
         [SerializeField] Hash128 m_DataHash;
 
+        // sort-free gaussian data
+        [SerializeField] TextAsset m_OpacitySHData;
+        [SerializeField] float m_SortFreeSigma;
+        [SerializeField] float m_SortFreeBackgroundWeight;
+        [SerializeField] bool m_IsSortFree;
+
+        public TextAsset opacitySHData => m_OpacitySHData;
+        public float sortFreeSigma => m_SortFreeSigma;
+        public float sortFreeBackgroundWeight => m_SortFreeBackgroundWeight;
+        public bool isSortFree => m_IsSortFree;
+        // sort-free gaussian data end
+
         public int formatVersion => m_FormatVersion;
         public int splatCount => m_SplatCount;
         public Vector3 boundsMin => m_BoundsMin;
@@ -242,6 +254,18 @@ namespace GaussianSplatting.Runtime
             public Vector3 pos;
             public Vector3 axisX, axisY, axisZ;
             public float fov;
+        }
+
+        // sort free gaussian data setter
+        public void SetSortFreeData(
+            TextAsset opacitySHData,
+            float sigma,
+            float backgroundWeight)
+        {
+            m_OpacitySHData = opacitySHData;
+            m_SortFreeSigma = sigma;
+            m_SortFreeBackgroundWeight = backgroundWeight;
+            m_IsSortFree = true;
         }
     }
 }
