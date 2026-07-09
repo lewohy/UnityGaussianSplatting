@@ -49,7 +49,7 @@ half4 frag (v2f i) : SV_Target
         float w = max(col.a + _SortFreeBackgroundWeight, 1e-6);
         float3 avgColor = col.rgb / w;
         float outAlpha = saturate(col.a / w);
-        return float4(saturate(avgColor), outAlpha);
+        return float4(GammaToLinearSpace(saturate(avgColor)), outAlpha);
     }
 
     float alpha = max(col.a, 1e-6);
