@@ -103,10 +103,10 @@ half4 frag (v2f i) : SV_Target
         discard;
 
     float vi = f16tof32(i.sortFreeData >> 16);
-    // float sigmodvi = 1.0 / (1.0 + exp(-vi));
+    // float sigmoidvi = 1.0 / (1.0 + exp(-vi));
     float depthWeight = f16tof32(i.sortFreeData);
-    float weight = saturate(vi * depthWeight);
-    float contrib = saturate(alpha * weight);
+    float weight = max(0.0, vi * depthWeight);
+    float contrib = max(0.0, alpha * weight);
 
     if (contrib < 1.0 / 255.0)
         discard;

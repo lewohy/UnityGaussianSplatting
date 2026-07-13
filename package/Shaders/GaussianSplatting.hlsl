@@ -689,9 +689,7 @@ float EvalOpacitySH(uint splatIdx, float3 dir)
         (SH_C3[5] * z * (xx - yy)) * r13 +
         (SH_C3[6] * x * (xx - 3 * yy)) * r14;
 
-    float sigmoidRes = 1.0 / (1.0 + exp(-res));
-    return sigmoidRes;
-    
+    return res;
     // return max(res, 0.0);
 }
 
