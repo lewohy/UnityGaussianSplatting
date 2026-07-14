@@ -13,7 +13,7 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
 
     [Header("Frame pacing")]
     [Tooltip("Use -1 for no application cap. VSync remains disabled while enabled.")]
-    [SerializeField] int m_TargetFrameRate = -1;
+    [SerializeField] int m_TargetFrameRate = 240;
 
     [Header("Benchmark")]
     [SerializeField, Min(0f)] float m_WarmupSeconds = 3f;
