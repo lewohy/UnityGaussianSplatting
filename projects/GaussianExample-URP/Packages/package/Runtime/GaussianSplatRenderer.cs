@@ -28,7 +28,6 @@ namespace GaussianSplatting.Runtime
         readonly Dictionary<GaussianSplatRenderer, MaterialPropertyBlock> m_Splats = new();
         readonly HashSet<Camera> m_CameraCommandBuffersDone = new();
         readonly List<(GaussianSplatRenderer, MaterialPropertyBlock)> m_ActiveSplats = new();
-
         readonly MaterialPropertyBlock m_CompositeProperties = new();
 
         CommandBuffer m_CommandBuffer;
@@ -115,24 +114,19 @@ namespace GaussianSplatting.Runtime
                 var gs = kvp.Item1;
                 gs.EnsureMaterials();
                 matComposite = gs.m_MatComposite;
-
                 if (matComposite == null)
                     continue;
 
-                // Configure the composite material here so that the setting
-                // is applied in Built-in, URP, and HDRP rendering paths.
+                // Composition is a separate full-screen draw. Its sort-free
+                // state must be set on this material, not only on the splat MPB.
                 matComposite.SetInt(
                     GaussianSplatRenderer.Props.UseSortFree,
                     gs.asset != null && gs.asset.isSortFree ? 1 : 0
                 );
-
                 matComposite.SetFloat(
                     GaussianSplatRenderer.Props.SortFreeBackgroundWeight,
-                    gs.asset != null
-                        ? gs.asset.sortFreeBackgroundWeight
-                        : 0.0f
+                    gs.asset != null ? gs.asset.sortFreeBackgroundWeight : 0.0f
                 );
-
                 var mpb = kvp.Item2;
 
                 // sort
@@ -140,8 +134,8 @@ namespace GaussianSplatting.Runtime
                 // sortfreeGS modification: bypass sorting when sortfreeGS
                 if (!gs.asset.isSortFree)
                 {
-                if (gs.m_FrameCounter % gs.m_SortNthFrame == 0)
-                    gs.SortPoints(cmb, cam, matrix);
+                    if (gs.m_FrameCounter % gs.m_SortNthFrame == 0)
+                        gs.SortPoints(cmb, cam, matrix);
                 }
                 ++gs.m_FrameCounter;
 
@@ -226,12 +220,9 @@ namespace GaussianSplatting.Runtime
             // add sorting, view calc and drawing commands for each splat object
             Material matComposite = SortAndRenderSplats(cam, m_CommandBuffer);
 
-            // sort-free GS modification: pass sort-free flags to composite shader
             if (matComposite == null)
             {
-                m_CommandBuffer.ReleaseTemporaryRT(
-                    GaussianSplatRenderer.Props.GaussianSplatRT
-                );
+                m_CommandBuffer.ReleaseTemporaryRT(GaussianSplatRenderer.Props.GaussianSplatRT);
                 return;
             }
 
