@@ -25,6 +25,8 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
     int m_PreviousVSync;
     int m_PreviousTargetFrameRate;
     Coroutine m_Benchmark;
+    float FPS = 0.0f;
+    float deltaTime = 0.0f;
 
     void OnEnable()
     {
@@ -52,6 +54,8 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha1)) SelectOriginal();
         if (Input.GetKeyDown(KeyCode.Alpha2)) SelectSortFree();
         if (Input.GetKeyDown(KeyCode.B)) RunBenchmark();
+        deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
+        FPS = 1.0f / deltaTime;
     }
 
     public void SelectOriginal() => SetActiveRenderer(m_Original3DGS, m_SortFreeGS);
@@ -97,5 +101,6 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
         $"3D Gaussian Splatting: {m_OriginalResult}\n" +
         $"Sort-free Gaussian Splatting: {m_SortFreeResult}\n" +
         "1: original   2: sort-free   B: benchmark again\n" +
-        $"VSync: off, target: {(m_TargetFrameRate < 0 ? "unlimited" : m_TargetFrameRate + " FPS")}");
+        $"VSync: off, target: {(m_TargetFrameRate < 0 ? "unlimited" : m_TargetFrameRate + " FPS")}\n" +
+        $"Current FPS: {FPS}");
 }
