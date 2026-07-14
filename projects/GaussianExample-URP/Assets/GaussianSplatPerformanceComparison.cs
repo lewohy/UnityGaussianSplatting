@@ -1,10 +1,10 @@
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Measures original 3DGS and sort-free GS in the same scene. Only one root is
-/// enabled at a time because their composite operations share GaussianSplatRT.
-/// </summary>
+// Measures original 3DGS and sort-free GS in the same scene. Only one root is
+// enabled at a time because their composite operations share GaussianSplatRT.
+
+
 public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
 {
     [Header("One original-3DGS root and one sort-free-GS root")]
@@ -16,8 +16,8 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
     [SerializeField] int m_TargetFrameRate = -1;
 
     [Header("Benchmark")]
-    [SerializeField, Min(0f)] float m_WarmupSeconds = 2f;
-    [SerializeField, Min(0.25f)] float m_SampleSeconds = 5f;
+    [SerializeField, Min(0f)] float m_WarmupSeconds = 3f;
+    [SerializeField, Min(0.25f)] float m_SampleSeconds = 10f;
     [SerializeField] bool m_RunOnStart = true;
 
     string m_OriginalResult = "not measured";
