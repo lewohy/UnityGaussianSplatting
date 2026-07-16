@@ -1,9 +1,6 @@
 using System.Collections;
 using UnityEngine;
-
-// Measures original 3DGS and sort-free GS in the same scene. Only one root is
-// enabled at a time because their composite operations share GaussianSplatRT.
-
+using TMPro;
 
 public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
 {
@@ -19,6 +16,9 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
     [SerializeField, Min(0f)] float m_WarmupSeconds = 3f;
     [SerializeField, Min(0.25f)] float m_SampleSeconds = 10f;
     [SerializeField] bool m_RunOnStart = true;
+
+    [Header("Mobile UI Configuration")]
+    [SerializeField] private TMP_Text m_BenchmarkUIText;
 
     string m_OriginalResult = "not measured";
     string m_SortFreeResult = "not measured";
@@ -54,8 +54,22 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha1)) SelectOriginal();
         if (Input.GetKeyDown(KeyCode.Alpha2)) SelectSortFree();
         if (Input.GetKeyDown(KeyCode.B)) RunBenchmark();
+        
         deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
         FPS = 1.0f / deltaTime;
+
+        UpdateMobileUI();
+    }
+
+    private void UpdateMobileUI()
+    {
+        if (m_BenchmarkUIText == null) return;
+
+        m_BenchmarkUIText.text = 
+            $"<b>3D Gaussian Splatting:</b> {m_OriginalResult}\n" +
+            $"<b>Sort-free Gaussian Splatting:</b> {m_SortFreeResult}\n\n" +
+            $"VSync: off, target: {(m_TargetFrameRate < 0 ? "unlimited" : m_TargetFrameRate + " FPS")}\n" +
+            $"Current FPS: <color=yellow>{FPS:F1}</color>";
     }
 
     public void SelectOriginal() => SetActiveRenderer(m_Original3DGS, m_SortFreeGS);
@@ -96,11 +110,4 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
         if (disabledRenderer != null) disabledRenderer.SetActive(false);
         if (enabledRenderer != null) enabledRenderer.SetActive(true);
     }
-
-    void OnGUI() => GUI.Label(new Rect(16, 16, 480, 110),
-        $"3D Gaussian Splatting: {m_OriginalResult}\n" +
-        $"Sort-free Gaussian Splatting: {m_SortFreeResult}\n" +
-        "1: original   2: sort-free   B: benchmark again\n" +
-        $"VSync: off, target: {(m_TargetFrameRate < 0 ? "unlimited" : m_TargetFrameRate + " FPS")}\n" +
-        $"Current FPS: {FPS}");
 }
