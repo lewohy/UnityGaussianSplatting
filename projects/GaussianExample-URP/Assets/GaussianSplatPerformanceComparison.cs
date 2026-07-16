@@ -66,8 +66,8 @@ public sealed class GaussianSplatPerformanceComparison : MonoBehaviour
         if (m_BenchmarkUIText == null) return;
 
         m_BenchmarkUIText.text = 
-            $"<b>3D Gaussian Splatting:</b> {m_OriginalResult}\n" +
-            $"<b>Sort-free Gaussian Splatting:</b> {m_SortFreeResult}\n\n" +
+            $"<b>3D Gaussian Splatting:</b> \n{m_OriginalResult}\n" +
+            $"<b>Sort-free Gaussian Splatting:</b> \n{m_SortFreeResult}\n\n" +
             $"VSync: off, target: {(m_TargetFrameRate < 0 ? "unlimited" : m_TargetFrameRate + " FPS")}\n" +
             $"Current FPS: <color=yellow>{FPS:F1}</color>";
     }
