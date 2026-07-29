@@ -1,0 +1,3 @@
+[submodule "GSPackage"]
+	path = GSPackage
+	url = https://github.com/AppleParfait/UnityGSPackageMobile.git
