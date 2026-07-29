@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "ai.evova.gaussian-splatting": {
-      "version": "file:../../../../UnityGSPackageMobile",
+      "version": "file:../../../GSPackage",
       "depth": 0,
       "source": "local",
       "dependencies": {
