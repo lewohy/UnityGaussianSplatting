@@ -59,18 +59,9 @@ MonoBehaviour:
       - rid: 5752441729541734402
       - rid: 5752441729541734403
       - rid: 5752441729541734404
+      - rid: 5752442089174204602
     m_RuntimeSettings:
-      m_List:
-      - rid: 1297627711732449281
-      - rid: 1297627711732449283
-      - rid: 1297627711732449285
-      - rid: 1297627711732449286
-      - rid: 1297627711732449288
-      - rid: 1297627711732449289
-      - rid: 1297627711732449290
-      - rid: 1297627711732449292
-      - rid: 1297627711732449297
-      - rid: 1297627711732449300
+      m_List: []
   m_AssetVersion: 8
   m_ObsoleteDefaultVolumeProfile: {fileID: 0}
   m_RenderingLayerNames:
@@ -356,3 +347,11 @@ MonoBehaviour:
       type: {class: UniversalRenderPipelineEditorAssets, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
         m_DefaultSettingsVolumeProfile: {fileID: 11400000, guid: eda47df5b85f4f249abf7abd73db2cb2, type: 2}
+    - rid: 5752442089174204602
+      type: {class: GaussianSplattingResources, ns: GaussianSplatting.Runtime, asm: GaussianSplatting}
+      data:
+        m_GPUSortShader: {fileID: 7200000, guid: f5abcca95d555dc4cb769913da47a65f, type: 3}
+        m_GPUPrefixScanShader: {fileID: 7200000, guid: abfb77e5bee19ab4fbf2238fb000c1ff, type: 3}
+        m_CompositeShader: {fileID: 4800000, guid: 7e184af7d01193a408eb916d8acafff9, type: 3}
+        m_ShadowCompositeShader: {fileID: 4800000, guid: 4f6042fc15d7c964c8cd175668af38b1, type: 3}
+        m_DepthGradientShader: {fileID: 4800000, guid: f53952103fc724b7c9816908afa9ea76, type: 3}
